@@ -1,0 +1,28 @@
+# Deep Learning frameworks
+tensorflow>=2.12.0
+keras>=2.12.0
+
+# Computer Vision and Image Processing
+opencv-python
+Pillow
+
+# Data Science and Visualization
+numpy
+matplotlib
+scikit-learn
+
+# Jupyter and Development
+jupyter
+tqdm
+
+# Additional utilities for object detection
+imageio
+h5py
+scipy
+
+# For video processing
+imageio-ffmpeg
+
+# For downloading models and datasets
+requests
+urllib3

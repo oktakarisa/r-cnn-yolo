@@ -1,0 +1,18 @@
+{
+  "dataset": "Simpsons Characters Dataset",
+  "total_classes": 18,
+  "total_annotations": 7889,
+  "top_10_classes": {
+    "lisa_simpson": 756,
+    "homer_simpson": 718,
+    "abraham_grampa_simpson": 687,
+    "ned_flanders": 675,
+    "bart_simpson": 650,
+    "charles_montgomery_burns": 650,
+    "marge_simpson": 629,
+    "principal_skinner": 614,
+    "krusty_the_clown": 429,
+    "moe_szyslak": 403
+  },
+  "generated_at": "2025-10-28T09:41:52.687014"
+}
