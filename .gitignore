@@ -28,13 +28,21 @@ ENV/
 # Training outputs
 logs/
 checkpoints/
+save/
 *.log
 *.csv
+*.pickle
+out.csv
 
-# Dataset directories (if large)
+# Dataset directories (large image files - don't push to GitHub)
 simpsons_dataset/
+data/faster_rcnn/simpsons_dataset/
 data/faster_rcnn/data/
 data/yolov3/simpsons/
+
+# Keep plots and reports - needed for GitHub rendering
+# plots/ - KEPT (contains visualizations)
+# reports/ - KEPT (contains analysis)
 
 # IDE and editor files
 .vscode/

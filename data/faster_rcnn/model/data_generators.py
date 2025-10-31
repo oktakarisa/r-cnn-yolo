@@ -133,10 +133,31 @@ def calc_rpn(C, img_data, width, height, resized_width, resized_height):
 	gta = np.zeros((num_bboxes, 4))
 	for bbox_num, bbox in enumerate(img_data['bboxes']):
 		# get the GT box coordinates, and resize to account for image resizing
-		gta[bbox_num, 0] = bbox['x1'] * (resized_width / float(width))
-		gta[bbox_num, 1] = bbox['x2'] * (resized_width / float(width))
-		gta[bbox_num, 2] = bbox['y1'] * (resized_height / float(height))
-		gta[bbox_num, 3] = bbox['y2'] * (resized_height / float(height))
+		x1_scaled = bbox['x1'] * (resized_width / float(width))
+		x2_scaled = bbox['x2'] * (resized_width / float(width))
+		y1_scaled = bbox['y1'] * (resized_height / float(height))
+		y2_scaled = bbox['y2'] * (resized_height / float(height))
+		
+		# Ensure coordinates are valid after scaling (x1 < x2, y1 < y2, and within bounds)
+		x1_scaled = max(0, min(x1_scaled, resized_width - 1))
+		x2_scaled = max(0, min(x2_scaled, resized_width - 1))
+		y1_scaled = max(0, min(y1_scaled, resized_height - 1))
+		y2_scaled = max(0, min(y2_scaled, resized_height - 1))
+		
+		# Ensure x1 < x2 and y1 < y2 (should already be true from parser, but double-check)
+		if x1_scaled >= x2_scaled:
+			x1_scaled, x2_scaled = x2_scaled, x1_scaled
+			if x1_scaled >= x2_scaled:  # If still invalid after swap, make minimum size
+				x2_scaled = x1_scaled + 1
+		if y1_scaled >= y2_scaled:
+			y1_scaled, y2_scaled = y2_scaled, y1_scaled
+			if y1_scaled >= y2_scaled:  # If still invalid after swap, make minimum size
+				y2_scaled = y1_scaled + 1
+		
+		gta[bbox_num, 0] = x1_scaled
+		gta[bbox_num, 1] = x2_scaled
+		gta[bbox_num, 2] = y1_scaled
+		gta[bbox_num, 3] = y2_scaled
 
 	# rpn ground truth
 	for anchor_size_idx in range(len(anchor_sizes)):

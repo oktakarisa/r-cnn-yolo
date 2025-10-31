@@ -3,7 +3,17 @@ try:
 except ImportError:
     from keras.layers import Layer
     from keras import backend as K
-    InputSpec = K.__dict__.get('InputSpec', type('InputSpec', (), {}))
+    try:
+        from keras.engine.keras_tensor import KerasTensor
+        # New Keras version - InputSpec is different
+        class InputSpec:
+            def __init__(self, shape=None, ndim=None, dtype=None):
+                self.shape = shape
+                self.ndim = ndim
+                self.dtype = dtype
+    except ImportError:
+        InputSpec = K.__dict__.get('InputSpec', type('InputSpec', (), {}))
+
 from keras import initializers, regularizers
 from keras import backend as K
 
@@ -25,7 +35,20 @@ class FixedBatchNormalization(Layer):
         super(FixedBatchNormalization, self).__init__(**kwargs)
 
     def build(self, input_shape):
-        self.input_spec = [InputSpec(shape=input_shape)]
+        # Handle InputSpec compatibility for different Keras versions
+        try:
+            # Try new Keras format
+            from tensorflow.keras.layers import InputSpec
+            self.input_spec = InputSpec(shape=input_shape)
+        except (ImportError, TypeError):
+            try:
+                # Try old Keras format with list
+                self.input_spec = [InputSpec(shape=input_shape)]
+            except TypeError:
+                # If InputSpec doesn't accept arguments, just set shape directly
+                self.input_spec = InputSpec()
+                self.input_spec.shape = input_shape
+        
         shape = (input_shape[self.axis],)
 
         self.gamma = self.add_weight(shape,
@@ -54,7 +77,12 @@ class FixedBatchNormalization(Layer):
     def call(self, x, mask=None):
 
         assert self.built, 'Layer must be built before being called'
-        input_shape = K.int_shape(x)
+        # Handle both old and new Keras versions
+        try:
+            input_shape = K.int_shape(x)
+        except AttributeError:
+            # New Keras uses x.shape directly
+            input_shape = x.shape.as_list() if hasattr(x.shape, 'as_list') else list(x.shape)
 
         reduction_axes = list(range(len(input_shape)))
         del reduction_axes[self.axis]
@@ -78,6 +106,14 @@ class FixedBatchNormalization(Layer):
                 epsilon=self.epsilon,axis=0)
 
         return x_normed
+
+    def compute_output_shape(self, input_shape):
+        """For compatibility with older Keras"""
+        return input_shape
+
+    def compute_output_spec(self, inputs, **kwargs):
+        """For newer Keras versions - mask is passed in kwargs but not used"""
+        return inputs
 
     def get_config(self):
         config = {'epsilon': self.epsilon,

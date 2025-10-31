@@ -18,7 +18,30 @@ from model.parser import get_data
 import model.roi_helpers as roi_helpers
 
 from keras import backend as K
-from keras.utils import generic_utils
+
+# Handle Keras version compatibility for progress bar
+try:
+    from keras.utils import generic_utils
+    Progbar = generic_utils.Progbar
+except ImportError:
+    try:
+        from keras.utils.generic_utils import Progbar
+    except ImportError:
+        # Fallback: create a simple progress bar
+        class Progbar:
+            def __init__(self, target):
+                self.target = target
+                self.current = 0
+            def update(self, current, values=None):
+                self.current = current
+                percent = int(100 * current / self.target)
+                bar = '=' * (percent // 2) + ' ' * (50 - percent // 2)
+                values_str = ''
+                if values:
+                    values_str = ' | ' + ' | '.join([f'{k}: {v:.4f}' for k, v in values])
+                print(f'\rProgress: [{bar}] {percent}% ({current}/{self.target}){values_str}', end='', flush=True)
+                if current >= self.target:
+                    print()  # New line when complete
 
 sys.setrecursionlimit(10000)
 
@@ -45,6 +68,15 @@ def main():
         os.makedirs(args.save_dir)
     if args.path == None:
         raise OSError("path to annotation file must be required.")
+    
+    # Validate annotation file exists
+    if not os.path.exists(args.path):
+        raise OSError(f"Annotation file not found: {args.path}")
+    
+    print("=" * 70)
+    print("Loading and validating annotations...")
+    print("=" * 70)
+    
     C = config.Config()
     C.config_filename = save_name + "_config.pickle"
     C.model_path = save_name + "_model.hdf5"
@@ -62,6 +94,19 @@ def main():
 
     train_imgs = [s for s in all_imgs if s['imageset'] == 'trainval']
     val_imgs = [s for s in all_imgs if s['imageset'] == 'test']
+    
+    # Validate split
+    if len(train_imgs) == 0:
+        raise ValueError("No training images found! Check annotation file and image paths.")
+    if len(val_imgs) == 0:
+        raise ValueError("No validation images found! Check annotation file and image paths.")
+    
+    print("\n" + "=" * 70)
+    print("Dataset Split Summary:")
+    print(f"  Training images: {len(train_imgs)}")
+    print(f"  Validation images: {len(val_imgs)}")
+    print(f"  Total classes: {len(classes_count)}")
+    print("=" * 70 + "\n")
 
     data_gen_train = data_generators.get_anchor_gt(train_imgs, classes_count, C, K.image_data_format(), mode='train')
     data_gen_val = data_generators.get_anchor_gt(val_imgs, classes_count, C, K.image_data_format(), mode='val')
@@ -83,7 +128,7 @@ def main():
     print(model_all.summary())
     try:
         for epoch_num in range(args.n_epochs):
-            progbar = generic_utils.Progbar(args.n_iters)
+            progbar = Progbar(args.n_iters)
             print('Epoch {}/{}'.format(epoch_num + 1, args.n_epochs))
 
             while True:
